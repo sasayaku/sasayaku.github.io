@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S3原初之星计算器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: linear-gradient(180deg, #2d3a4f 0%, #1e2836 100%);
+            color: #ffd700;
+            font-weight: 600;
+        }
+
+        td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .row-label {
+            text-align: left;
+            font-weight: 500;
+            color: #a0c4ff;
+            background: rgba(160, 196, 255, 0.1) !important;
+        }
+
+        /* ========== 输入框样式 ========== */
+        
+        /* 隐藏数字输入框的增减箭头 */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        /* 单元格内输入框 */
+        .input-cell input {
+            width: 80px;
+            padding: 8px 12px;
+            border: 2px solid #4a90d9;
+            border-radius: 6px;
+            background: rgba(74, 144, 217, 0.1);
+            color: #fff;
+            font-size: 14px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .input-cell input:focus {
+            outline: none;
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        /* 行标签内嵌输入框 */
+        .inline-input {
+            width: 70px;
+            padding: 4px 8px;
+            border: 2px solid #4a90d9;
+            border-radius: 4px;
+            background: rgba(74, 144, 217, 0.1);
+            color: #fff;
+            font-size: 14px;
+            text-align: center;
+            margin-left: 5px;
+        }
+
+        .inline-input:focus {
+            outline: none;
+            border-color: #ffd700;
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+        }
+
+        /* ========== 表格行样式 ========== */
+
+        /* 评分行 - 绿色 */
+        .score-row td { color: #4ade80; font-weight: 600; }
+        .score-row td.total-col,
+        .score-row td.star-col { color: #4ade80 !important; }
+
+        /* 参考行 - 灰色 */
+        .ref-row td { color: #94a3b8; font-size: 13px; }
+        .ref-row td.total-col,
+        .ref-row td.star-col { color: #94a3b8 !important; }
+
+        /* 差距行 */
+        .gap-row td { font-weight: 500; }
+        .gap-row td.total-col.positive,
+        .gap-row td.star-col.positive { color: #4ade80 !important; }
+        .gap-row td.total-col.negative,
+        .gap-row td.star-col.negative { color: #f87171 !important; }
+
+        /* 备注行 */
+        .note-row td { font-size: 12px; color: #94a3b8; }
+        .note-row .bonus-2 { color: #60a5fa; }
+        .note-row .bonus-3 { color: #4ade80; }
+        .note-row .bonus-double { color: #f472b6; }
+
+        /* 分隔行 */
+        .separator-row td {
+            height: 20px;
+            background: transparent;
+            border: none;
+        }
+
+        /* ========== 数值颜色样式 ========== */
+
+        .negative { color: #f87171 !important; }  /* 红色 - 还需努力 */
+        .positive { color: #4ade80 !important; }  /* 绿色 - 已超过 */
+
+        /* ========== 特殊列高亮 ========== */
+
+        /* 总评分列 - 金色 */
+        .total-col {
+            background: rgba(255, 215, 0, 0.1) !important;
+            color: #ffd700 !important;
+            font-weight: 600;
+        }
+
+        /* 原初之星列 - 紫色 */
+        .star-col {
+            background: rgba(139, 92, 246, 0.1) !important;
+            color: #a78bfa !important;
+            font-weight: 600;
+        }
+
+        /* ========== 预设行背景 ========== */
+
+        .preset-1 td { background: rgba(251, 191, 36, 0.05); }
+        .preset-2 td { background: rgba(244, 114, 182, 0.05); }
+
+        /* ========== 版权信息 ========== */
+
+        .copyright {
+            text-align: center;
+            margin-top: 30px;
+            padding: 15px;
+            color: #64748b;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌟 S3原初之星计算器</h1>
+        
+        <div class="table-wrapper">
+            <table id="starTable">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>角色</th>
+                        <th>技能</th>
+                        <th>装备</th>
+                        <th>幻兽</th>
+                        <th>遗物</th>
+                        <th>总评分</th>
+                        <th>原初之星</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 平均等级行（可输入） -->
+                    <tr class="input-row">
+                        <td class="row-label">平均等级</td>
+                        <td class="input-cell"><input type="number" id="level_role" value="260" step="1"></td>
+                        <td class="input-cell"><input type="number" id="level_skill" value="250" step="1"></td>
+                        <td class="input-cell"><input type="number" id="level_equip" value="250" step="1"></td>
+                        <td class="input-cell"><input type="number" id="level_pet" value="240" step="1"></td>
+                        <td class="input-cell"><input type="number" id="level_relic" value="25" step="1"></td>
+                        <td class="total-col" id="total_score">26500</td>
+                        <td class="star-col" id="star_score">2103</td>
+                    </tr>
+                    
+                    <!-- 评分行 -->
+                    <tr class="score-row">
+                        <td class="row-label">评分</td>
+                        <td id="score_role">10000</td>
+                        <td id="score_skill">3600</td>
+                        <td id="score_equip">6300</td>
+                        <td id="score_pet">1920</td>
+                        <td id="score_relic">4680</td>
+                        <td class="total-col">-</td>
+                        <td class="star-col">向下取整</td>
+                    </tr>
+                    
+                    <!-- 参考行 -->
+                    <tr class="ref-row">
+                        <td class="row-label">参考：每升1级平均等级增加的评分</td>
+                        <td id="ref_role">100</td>
+                        <td id="ref_skill">40</td>
+                        <td id="ref_equip">70</td>
+                        <td id="ref_pet">24</td>
+                        <td id="ref_relic">520</td>
+                        <td class="total-col">-</td>
+                        <td class="star-col" id="star_final">2103</td>
+                    </tr>
+                    
+                    <!-- 分隔行 -->
+                    <tr class="separator-row">
+                        <td colspan="8"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 第二个表格：目标差距计算（独立于第一个表格） -->
+        <div class="table-wrapper" style="margin-top: 20px;">
+            <table id="gapTable">
+                <thead id="gapTableHead">
+                    <!-- 由JS动态生成 -->
+                </thead>
+                <tbody id="gapTableBody">
+                    <!-- 由JS动态生成 -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 版权信息 -->
+        <footer class="copyright">
+            © 魔力绽放-蓝蓝路
+        </footer>
+    </div>
+
+    <script>
+        /* ==================== 配置常量 ==================== */
+        
+        const INIT_LEVEL = {          // 初始等级
+            role: 160,
+            skill: 160,
+            equip: 160,
+            pet: 160,
+            relic: 16
+        };
+
+        const SCORE_PER_LEVEL = {     // 每升1级增加的评分
+            role: 100,
+            skill: 40,
+            equip: 70,
+            pet: 24,
+            relic: 520
+        };
+
+        const STAR_INIT = 65;         // 原初之星初始值
+        const SCORE_PER_STAR = 13;    // 每颗原初之星对应的评分
+        const LAST_SEASON_1 = 920;    // 上赛季预设值1
+        const LAST_SEASON_2 = 1200;   // 上赛季预设值2
+
+        // 目标原初之星配置（数量可变，与第一个表格列数无关）
+        // value: 目标值, note: 达成后的加成说明, noteClass: 备注样式类名
+        const TARGET_STAR = [
+            { value: 1880, note: '经验加成+2%', noteClass: 'bonus-2' },
+            { value: 2360, note: '经验加成+2%', noteClass: 'bonus-2' },
+            { value: 2880, note: '经验加成+2%', noteClass: 'bonus-2' },
+            { value: 3020, note: '升华3%', noteClass: 'bonus-3' },
+            { value: 3300, note: '翻倍2%', noteClass: 'bonus-double' },
+            { value: 3440, note: '经验加成+2%', noteClass: 'bonus-2' },
+            { value: 4040, note: '经验加成+2%', noteClass: 'bonus-2' }
+        ];
+
+        /* ==================== DOM 元素引用 ==================== */
+
+        // 等级输入框
+        const inputs = {
+            role: document.getElementById('level_role'),
+            skill: document.getElementById('level_skill'),
+            equip: document.getElementById('level_equip'),
+            pet: document.getElementById('level_pet'),
+            relic: document.getElementById('level_relic')
+        };
+
+        // 评分显示
+        const scores = {
+            role: document.getElementById('score_role'),
+            skill: document.getElementById('score_skill'),
+            equip: document.getElementById('score_equip'),
+            pet: document.getElementById('score_pet'),
+            relic: document.getElementById('score_relic')
+        };
+
+        // 总计显示
+        const totals = {
+            total: document.getElementById('total_score'),
+            star: document.getElementById('star_score'),
+            starFinal: document.getElementById('star_final')
+        };
+
+        // 第二个表格容器
+        const gapTableHead = document.getElementById('gapTableHead');
+        const gapTableBody = document.getElementById('gapTableBody');
+        
+        // 自定义上赛季输入框引用（初始化后设置）
+        let customLastSeasonInput = null;
+
+        /* ==================== 计算函数 ==================== */
+
+        /**
+         * 计算单项评分
+         * 公式: (当前等级 - 初始等级) × 每级评分
+         */
+        function calculateScore(type, level) {
+            return Math.floor((level - INIT_LEVEL[type]) * SCORE_PER_LEVEL[type]);
+        }
+
+        /**
+         * 计算总评分（所有单项评分之和）
+         */
+        function calculateTotalScore() {
+            let total = 0;
+            for (const type in scores) {
+                total += parseInt(scores[type].textContent) || 0;
+            }
+            return total;
+        }
+
+        /**
+         * 计算原初之星
+         * 公式: 总评分 ÷ 每颗星评分 + 初始值
+         */
+        function calculateStarScore(totalScore) {
+            return totalScore / SCORE_PER_STAR + STAR_INIT;
+        }
+
+        /**
+         * 计算达成目标所需的差值
+         * 公式: (目标原初之星 - 上赛季原初之星 - 初始值) × 每颗星评分 - 当前总评分
+         * 结果: 负数=已超过目标, 正数=还需努力
+         */
+        function calculateS2Gap(targetStar, lastSeasonStar, totalScore) {
+            return (targetStar - lastSeasonStar - STAR_INIT) * SCORE_PER_STAR - totalScore;
+        }
+
+        /* ==================== 界面更新函数 ==================== */
+
+        /**
+         * 初始化第二个表格（动态生成）
+         */
+        function initGapTable() {
+            // 生成表头（离目标差距评分↓ + 目标原初之星值）
+            let headHtml = '<tr><th>离目标差距评分↓</th>';
+            for (let i = 0; i < TARGET_STAR.length; i++) {
+                headHtml += `<th>${TARGET_STAR[i].value}</th>`;
+            }
+            headHtml += '</tr>';
+            gapTableHead.innerHTML = headHtml;
+            
+            // 生成表体
+            let bodyHtml = '';
+            
+            // 上赛季预设值1行
+            bodyHtml += '<tr class="gap-row preset-1" id="preset1Row"><td class="row-label">S2达到' + LAST_SEASON_1 + '</td>';
+            for (let i = 0; i < TARGET_STAR.length; i++) {
+                bodyHtml += `<td id="preset1_${i}">-</td>`;
+            }
+            bodyHtml += '</tr>';
+            
+            // 上赛季预设值2行
+            bodyHtml += '<tr class="gap-row preset-2" id="preset2Row"><td class="row-label">S2达到' + LAST_SEASON_2 + '</td>';
+            for (let i = 0; i < TARGET_STAR.length; i++) {
+                bodyHtml += `<td id="preset2_${i}">-</td>`;
+            }
+            bodyHtml += '</tr>';
+            
+            // 上赛季达到自定义值行
+            bodyHtml += '<tr class="gap-row" id="customRow"><td class="row-label">S2达到<input type="number" id="custom_last_season" value="" placeholder="自定义" step="1" class="inline-input"></td>';
+            for (let i = 0; i < TARGET_STAR.length; i++) {
+                bodyHtml += `<td id="custom_${i}">-</td>`;
+            }
+            bodyHtml += '</tr>';
+            
+            // 备注行
+            bodyHtml += '<tr class="note-row"><td class="row-label">备注：此目标的加成</td>';
+            for (let i = 0; i < TARGET_STAR.length; i++) {
+                const item = TARGET_STAR[i];
+                bodyHtml += `<td class="${item.noteClass}">${item.note}</td>`;
+            }
+            bodyHtml += '</tr>';
+            
+            gapTableBody.innerHTML = bodyHtml;
+            
+            // 设置自定义输入框引用并绑定事件
+            customLastSeasonInput = document.getElementById('custom_last_season');
+            customLastSeasonInput.addEventListener('input', updateDisplay);
+        }
+
+        /**
+         * 更新所有显示内容
+         */
+        function updateDisplay() {
+            // 更新各项评分
+            for (const type in inputs) {
+                const level = parseInt(inputs[type].value) || 0;
+                scores[type].textContent = calculateScore(type, level);
+            }
+
+            // 更新总评分和原初之星
+            const totalScore = calculateTotalScore();
+            const starScore = Math.floor(calculateStarScore(totalScore));
+            
+            totals.total.textContent = totalScore;
+            totals.star.textContent = starScore;
+            totals.starFinal.textContent = starScore;
+
+            // 更新差距显示
+            updateGapDisplay();
+        }
+
+        /**
+         * 更新差距显示（第二个表格）
+         */
+        function updateGapDisplay() {
+            const totalScore = parseInt(totals.total.textContent) || 0;
+            const customValue = customLastSeasonInput ? customLastSeasonInput.value.trim() : '';
+            const hasCustomValue = customValue !== '';
+            const customLastSeason = hasCustomValue ? parseInt(customValue) : 0;
+            
+            for (let i = 0; i < TARGET_STAR.length; i++) {
+                const targetStar = TARGET_STAR[i].value;
+                
+                // 更新差距行
+                document.getElementById(`preset1_${i}`).textContent = calculateS2Gap(targetStar, LAST_SEASON_1, totalScore);
+                document.getElementById(`preset2_${i}`).textContent = calculateS2Gap(targetStar, LAST_SEASON_2, totalScore);
+                document.getElementById(`custom_${i}`).textContent = hasCustomValue ? calculateS2Gap(targetStar, customLastSeason, totalScore) : '-';
+            }
+            
+            applyNumberStyles();
+        }
+
+        /**
+         * 应用正负数颜色样式
+         * 负数(已超过)=绿色, 正数(还差)=红色
+         */
+        function applyNumberStyles() {
+            document.querySelectorAll('.gap-row td:not(.row-label)').forEach(cell => {
+                const value = parseFloat(cell.textContent);
+                cell.classList.remove('positive', 'negative');
+                
+                if (!isNaN(value)) {
+                    cell.classList.add(value < 0 ? 'positive' : value > 0 ? 'negative' : '');
+                }
+            });
+        }
+
+        /* ==================== 事件绑定与初始化 ==================== */
+
+        // 绑定等级输入事件
+        for (const type in inputs) {
+            inputs[type].addEventListener('input', updateDisplay);
+        }
+
+        // 初始化第二个表格
+        initGapTable();
+
+        // 初始化显示
+        updateDisplay();
+    </script>
+</body>
+</html>
