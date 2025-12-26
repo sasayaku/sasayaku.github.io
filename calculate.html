@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏综合计算器</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Orbitron:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a12;
+            --bg-secondary: #12121e;
+            --bg-card: #1a1a2e;
+            --bg-input: #0d0d18;
+            --accent-gold: #ffd700;
+            --accent-orange: #ff6b35;
+            --accent-cyan: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff4757;
+            --accent-purple: #a855f7;
+            --accent-pink: #ff6b9d;
+            --accent-sand: #d4a574;
+            --accent-star: #a78bfa;
+            --text-primary: #f0f4f8;
+            --text-secondary: #8892a6;
+            --border-color: #2d3a52;
+            --glow-gold: rgba(255, 215, 0, 0.3);
+            --glow-cyan: rgba(0, 212, 255, 0.3);
+            --glow-purple: rgba(168, 85, 247, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse at 10% 10%, rgba(255, 215, 0, 0.03) 0%, transparent 40%),
+                radial-gradient(ellipse at 90% 90%, rgba(0, 212, 255, 0.03) 0%, transparent 40%),
+                radial-gradient(ellipse at 50% 50%, rgba(168, 85, 247, 0.02) 0%, transparent 60%);
+        }
+
+        #root {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px 15px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            animation: fadeInDown 0.5s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-orange), var(--accent-gold));
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+            animation: shimmer 3s linear infinite;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* ========== 全局参数输入区 ========== */
+        .global-params {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            animation: fadeInUp 0.5s ease-out 0.1s both;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .global-params::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-gold), var(--accent-star), var(--accent-cyan));
+        }
+
+        .global-params-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent-gold);
+        }
+
+        .params-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+        }
+
+        .param-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .param-group label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .param-group label .emoji {
+            font-size: 0.9rem;
+        }
+
+        .param-group input {
+            background: var(--bg-input);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 10px;
+            font-size: 1rem;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+            text-align: center;
+        }
+
+        .param-group input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 12px var(--glow-cyan);
+        }
+
+        .param-group input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.5;
+        }
+
+        .param-group.highlight-equip input { border-color: rgba(0, 212, 255, 0.4); }
+        .param-group.highlight-skill input { border-color: rgba(168, 85, 247, 0.4); }
+        .param-group.highlight-relic input { border-color: rgba(212, 165, 116, 0.4); }
+        .param-group.highlight-role input { border-color: rgba(255, 215, 0, 0.4); }
+        .param-group.highlight-pet input { border-color: rgba(0, 255, 136, 0.4); }
+        .param-group.highlight-days input { border-color: rgba(255, 107, 53, 0.5); background: rgba(255, 107, 53, 0.08); }
+
+        /* ========== 原初之星计算区 ========== */
+        .star-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            animation: fadeInUp 0.5s ease-out 0.2s both;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .star-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-star), var(--accent-gold), var(--accent-star));
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title.star { color: var(--accent-star); }
+        .section-title.cyan { color: var(--accent-cyan); }
+        .section-title.purple { color: var(--accent-purple); }
+        .section-title.sand { color: var(--accent-sand); }
+
+        .star-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .star-card {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .star-card .icon { font-size: 1.2rem; margin-bottom: 4px; }
+        .star-card .value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+        .star-card .label { font-size: 0.65rem; color: var(--text-secondary); }
+
+        .star-card.gold .value { color: var(--accent-gold); }
+        .star-card.star .value { color: var(--accent-star); }
+        .star-card.cyan .value { color: var(--accent-cyan); }
+        .star-card.purple .value { color: var(--accent-purple); }
+        .star-card.sand .value { color: var(--accent-sand); }
+        .star-card.green .value { color: var(--accent-green); }
+
+        /* 差距表格 */
+        .gap-table-wrapper {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        .gap-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+            font-size: 0.8rem;
+        }
+
+        .gap-table th,
+        .gap-table td {
+            padding: 8px 10px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .gap-table th {
+            background: var(--bg-secondary);
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+
+        .gap-table .row-label {
+            text-align: left;
+            color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.05) !important;
+        }
+
+        .gap-table .positive { color: var(--accent-green) !important; }
+        .gap-table .negative { color: var(--accent-red) !important; }
+
+        .gap-table .note-row td {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        .gap-table .bonus-2 { color: var(--accent-cyan) !important; }
+        .gap-table .bonus-3 { color: var(--accent-green) !important; }
+        .gap-table .bonus-double { color: var(--accent-pink) !important; }
+
+        .gap-table .inline-input {
+            width: 55px;
+            padding: 4px 5px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            text-align: center;
+            margin-left: 4px;
+        }
+
+        .gap-table .inline-input:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+        }
+
+        /* ========== 资源计算区 ========== */
+        .resource-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            animation: fadeInUp 0.5s ease-out 0.3s both;
+        }
+
+        @media (max-width: 1000px) {
+            .resource-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .resource-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .resource-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .resource-panel.equipment::before { background: linear-gradient(90deg, var(--accent-cyan), var(--accent-gold)); }
+        .resource-panel.skill::before { background: linear-gradient(90deg, var(--accent-purple), var(--accent-pink)); }
+        .resource-panel.relic::before { background: linear-gradient(90deg, var(--accent-sand), var(--accent-orange)); }
+
+        .resource-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .resource-title.cyan { color: var(--accent-cyan); }
+        .resource-title.purple { color: var(--accent-purple); }
+        .resource-title.sand { color: var(--accent-sand); }
+
+        .resource-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .resource-input {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .resource-input label {
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+        }
+
+        .resource-input input {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 7px 8px;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            width: 100%;
+        }
+
+        .resource-input input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+
+        .calculate-btn {
+            width: 100%;
+            padding: 10px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-orange));
+            border: none;
+            border-radius: 8px;
+            color: #0f0f1a;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .resource-result {
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .result-row:last-child { border-bottom: none; }
+        .result-row .label { color: var(--text-secondary); }
+        .result-row .value { font-weight: 600; font-family: 'Orbitron', sans-serif; }
+        .result-row .value.positive { color: var(--accent-green); }
+        .result-row .value.negative { color: var(--accent-red); }
+        .result-row .value.gold { color: var(--accent-gold); }
+        .result-row .value.cyan { color: var(--accent-cyan); }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .status-badge.success {
+            background: rgba(0, 255, 136, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .status-badge.error {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+
+        .empty-result {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .config-hint {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            padding: 6px 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+        }
+
+        .config-hint span { color: var(--accent-gold); }
+
+        .copyright {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        /* 隐藏数字输入框的增减箭头 */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        @media (max-width: 700px) {
+            .header h1 { font-size: 1.4rem; }
+            .params-grid { grid-template-columns: repeat(3, 1fr); }
+            .star-summary { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+
+        // ==================== 本地存储工具函数 ====================
+        const STORAGE_KEY = 'game_calculator_params';
+        const STORAGE_DAYS = 30;
+
+        function saveToStorage(data) {
+            try {
+                const storageData = {
+                    data: data,
+                    expiry: Date.now() + STORAGE_DAYS * 24 * 60 * 60 * 1000
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(storageData));
+            } catch (e) {
+                console.warn('无法保存到localStorage:', e);
+            }
+        }
+
+        function loadFromStorage() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    const { data, expiry } = JSON.parse(stored);
+                    if (Date.now() < expiry) {
+                        return data;
+                    }
+                    // 过期则清除
+                    localStorage.removeItem(STORAGE_KEY);
+                }
+            } catch (e) {
+                console.warn('无法从localStorage读取:', e);
+            }
+            return null;
+        }
+
+        // ==================== 配置常量 ====================
+        const RESOURCE_CONFIGS = {
+            equipment: {
+                name: '装备',
+                icon: '⚔️',
+                resourceName: '铁矿石',
+                resourceIcon: '🪨',
+                toolName: '锤子',
+                toolIcon: '🔨',
+                defaultLevel: 240,
+                baseCost: 46800,
+                costIncrement: 260,
+                itemCount: 5,
+                defaultHourlyGain: 4200,
+                maxToolPurchase: 10,
+                toolsPerPurchase: 5,
+                resourcePerTool: 1700,
+                themeColor: 'cyan'
+            },
+            skill: {
+                name: '技能',
+                icon: '✨',
+                resourceName: '精华',
+                resourceIcon: '💜',
+                toolName: '拳套',
+                toolIcon: '🥊',
+                defaultLevel: 230,
+                baseCost: 32600,
+                costIncrement: 200,
+                itemCount: 8,
+                defaultHourlyGain: 4161,
+                maxToolPurchase: 10,
+                toolsPerPurchase: 5,
+                resourcePerTool: 3000,
+                themeColor: 'purple'
+            },
+            relic: {
+                name: '遗物',
+                icon: '🏺',
+                resourceName: '沙子',
+                resourceIcon: '🏜️',
+                toolName: '铲子',
+                toolIcon: '⛏️',
+                defaultLevel: 25,
+                baseCost: 109250,
+                costIncrement: 5750,
+                itemCount: 5,
+                defaultHourlyGain: 3008,
+                maxToolPurchase: 10,
+                toolsPerPurchase: 5,
+                resourcePerTool: 1500,
+                themeColor: 'sand'
+            }
+        };
+
+        const STAR_CONFIG = {
+            initLevel: { role: 160, skill: 160, equip: 160, pet: 160, relic: 16 },
+            scorePerLevel: { role: 100, skill: 40, equip: 70, pet: 24, relic: 520 },
+            starInit: 65,
+            scorePerStar: 13,
+            lastSeason1: 920,
+            lastSeason2: 1200,
+            targetStars: [
+                { value: 1880, note: '经验+2%', noteClass: 'bonus-2' },
+                { value: 2360, note: '经验+2%', noteClass: 'bonus-2' },
+                { value: 2880, note: '经验+2%', noteClass: 'bonus-2' },
+                { value: 3020, note: '升华3%', noteClass: 'bonus-3' },
+                { value: 3300, note: '翻倍2%', noteClass: 'bonus-double' },
+                { value: 3440, note: '经验+2%', noteClass: 'bonus-2' },
+                { value: 4040, note: '经验+2%', noteClass: 'bonus-2' }
+            ]
+        };
+
+        // ==================== 工具函数 ====================
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+            if (num >= 10000) return (num / 10000).toFixed(2) + 'W';
+            return num.toLocaleString();
+        }
+
+        function getLevelUpgradeCost(level, config) {
+            return config.baseCost + (level - config.defaultLevel) * config.costIncrement;
+        }
+
+        function calculateUpgradeCost(startLevel, endLevel, config) {
+            if (endLevel <= startLevel) return 0;
+            let totalCost = 0;
+            for (let level = startLevel; level < endLevel; level++) {
+                totalCost += getLevelUpgradeCost(level, config);
+            }
+            return totalCost;
+        }
+
+        // ==================== 资源面板组件 ====================
+        function ResourcePanel({ type, config, targetLevel, globalDays, resourceData, onDataChange }) {
+            const handleInputChange = (key) => (e) => {
+                onDataChange(type, key, e.target.value);
+            };
+
+            const results = useMemo(() => {
+                const daysNum = parseInt(globalDays) || 0;
+                const currentLevelNum = parseInt(resourceData.currentLevel) || config.defaultLevel;
+                const currentResourceNum = parseInt(resourceData.currentResource) || 0;
+                const dailyPurchaseNum = Math.min(parseInt(resourceData.dailyToolPurchase) || 0, config.maxToolPurchase);
+                const currentToolsNum = parseInt(resourceData.currentTools) || 0;
+                const targetLevelNum = parseInt(targetLevel) || currentLevelNum + 1;
+                const hourlyGainNum = parseInt(resourceData.hourlyGain) || config.defaultHourlyGain;
+
+                if (targetLevelNum <= currentLevelNum) {
+                    return { error: '目标等级需大于当前' };
+                }
+
+                const singleItemCost = calculateUpgradeCost(currentLevelNum, targetLevelNum, config);
+                const totalUpgradeCost = singleItemCost * config.itemCount;
+                const autoResourceGain = daysNum * 24 * hourlyGainNum;
+                const toolsGained = daysNum * dailyPurchaseNum * config.toolsPerPurchase;
+                const totalTools = currentToolsNum + toolsGained;
+                const totalResourceAvailable = currentResourceNum + autoResourceGain;
+                const maxResourceFromTools = totalTools * config.resourcePerTool;
+                const totalPotentialResource = totalResourceAvailable + maxResourceFromTools;
+                const canComplete = totalPotentialResource >= totalUpgradeCost;
+
+                let toolsNeeded = 0;
+                let resourceShortage = totalUpgradeCost - totalResourceAvailable;
+                if (resourceShortage > 0) {
+                    toolsNeeded = Math.ceil(resourceShortage / config.resourcePerTool);
+                }
+
+                let remainingResource = 0;
+                let remainingTools = 0;
+
+                if (canComplete) {
+                    if (totalResourceAvailable >= totalUpgradeCost) {
+                        remainingResource = totalResourceAvailable - totalUpgradeCost;
+                        remainingTools = totalTools;
+                    } else {
+                        const actualToolsUsed = Math.min(toolsNeeded, totalTools);
+                        const resourceFromTools = actualToolsUsed * config.resourcePerTool;
+                        remainingResource = totalResourceAvailable + resourceFromTools - totalUpgradeCost;
+                        remainingTools = totalTools - actualToolsUsed;
+                    }
+                }
+
+                return {
+                    targetLevel: targetLevelNum,
+                    currentLevel: currentLevelNum,
+                    levelsToUpgrade: targetLevelNum - currentLevelNum,
+                    totalUpgradeCost,
+                    autoResourceGain,
+                    totalResourceAvailable,
+                    totalTools,
+                    maxResourceFromTools,
+                    totalPotentialResource,
+                    canComplete,
+                    resourceShortage: Math.max(0, totalUpgradeCost - totalPotentialResource),
+                    remainingResource: Math.max(0, remainingResource),
+                    remainingTools: Math.max(0, remainingTools)
+                };
+            }, [globalDays, resourceData, targetLevel, config]);
+
+            return (
+                <div className={`resource-panel ${type}`}>
+                    <div className={`resource-title ${config.themeColor}`}>
+                        <span>{config.icon}</span>
+                        <span>{config.name}升级</span>
+                    </div>
+
+                    <div className="resource-inputs">
+                        <div className="resource-input">
+                            <label>{config.icon} 当前等级</label>
+                            <input type="number" placeholder={config.defaultLevel} value={resourceData.currentLevel} onChange={handleInputChange('currentLevel')} />
+                        </div>
+                        <div className="resource-input">
+                            <label>{config.resourceIcon} 当前{config.resourceName}</label>
+                            <input type="number" placeholder="0" value={resourceData.currentResource} onChange={handleInputChange('currentResource')} />
+                        </div>
+                        <div className="resource-input">
+                            <label>⏰ 每小时获取</label>
+                            <input type="number" placeholder={config.defaultHourlyGain} value={resourceData.hourlyGain} onChange={handleInputChange('hourlyGain')} />
+                        </div>
+                        <div className="resource-input">
+                            <label>{config.toolIcon} 当前{config.toolName}</label>
+                            <input type="number" placeholder="0" value={resourceData.currentTools} onChange={handleInputChange('currentTools')} />
+                        </div>
+                        <div className="resource-input">
+                            <label>🛒 每天买{config.toolName}</label>
+                            <input type="number" placeholder="0" value={resourceData.dailyToolPurchase} onChange={handleInputChange('dailyToolPurchase')} />
+                        </div>
+                    </div>
+
+                    <div className="config-hint">
+                        天数: <span>{globalDays || 0}</span> | 
+                        目标: <span>Lv.{targetLevel || '?'}</span> | 
+                        基础: <span>{formatNumber(config.baseCost)}</span> | 
+                        数量: <span>{config.itemCount}</span>
+                    </div>
+
+                    <div className="resource-result">
+                        {results?.error ? (
+                            <div className="empty-result">⚠️ {results.error}</div>
+                        ) : results ? (
+                                <>
+                                    <div className="result-row">
+                                        <span className="label">升级等级</span>
+                                        <span className="value gold">Lv.{results.currentLevel} → Lv.{results.targetLevel}</span>
+                                    </div>
+                                    <div className="result-row">
+                                        <span className="label">总消耗</span>
+                                        <span className="value negative">-{formatNumber(results.totalUpgradeCost)}</span>
+                                    </div>
+                                    <div className="result-row">
+                                        <span className="label">可用资源</span>
+                                        <span className="value cyan">{formatNumber(results.totalResourceAvailable)}</span>
+                                    </div>
+                                    <div className="result-row">
+                                        <span className="label">{config.toolName}可兑换</span>
+                                        <span className="value cyan">{formatNumber(results.maxResourceFromTools)}</span>
+                                    </div>
+                                    <div className="result-row">
+                                        <span className="label">剩余{config.resourceName}</span>
+                                        <span className="value positive">{formatNumber(results.remainingResource)}</span>
+                                    </div>
+                                    <div className="result-row">
+                                        <span className="label">剩余{config.toolName}</span>
+                                        <span className="value positive">{results.remainingTools}个</span>
+                                    </div>
+                                    {results.canComplete ? (
+                                        <div className="status-badge success">✅ 资源充足</div>
+                                    ) : (
+                                        <div className="status-badge error">❌ 缺 {formatNumber(results.resourceShortage)}</div>
+                                    )}
+                                </>
+                            ) : null}
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== 主应用 ====================
+        function App() {
+            // 默认值
+            const defaultParams = {
+                days: 30,
+                roleLevel: 260,
+                skillLevel: 250,
+                equipLevel: 250,
+                petLevel: 240,
+                relicLevel: 25,
+                customLastSeason: ''
+            };
+
+            const defaultResourceData = {
+                equipment: { currentLevel: '240', currentResource: '', hourlyGain: '4200', currentTools: '', dailyToolPurchase: '' },
+                skill: { currentLevel: '230', currentResource: '', hourlyGain: '4161', currentTools: '', dailyToolPurchase: '' },
+                relic: { currentLevel: '25', currentResource: '', hourlyGain: '3008', currentTools: '', dailyToolPurchase: '' }
+            };
+
+            // 从localStorage读取初始值
+            const savedData = loadFromStorage();
+            const initialParams = savedData?.globalParams || defaultParams;
+            const initialResourceData = savedData?.resourceData || defaultResourceData;
+
+            // 全局参数状态
+            const [globalParams, setGlobalParams] = useState(initialParams);
+            const [resourceData, setResourceData] = useState(initialResourceData);
+
+            // 保存到localStorage
+            useEffect(() => {
+                saveToStorage({ globalParams, resourceData });
+            }, [globalParams, resourceData]);
+
+            const handleParamChange = (key) => (e) => {
+                setGlobalParams(prev => ({ ...prev, [key]: e.target.value }));
+            };
+
+            const handleResourceDataChange = (type, key, value) => {
+                setResourceData(prev => ({
+                    ...prev,
+                    [type]: { ...prev[type], [key]: value }
+                }));
+            };
+
+            // 原初之星计算
+            const calculateScore = (type, level) => {
+                const initLevel = STAR_CONFIG.initLevel[type];
+                const perLevel = STAR_CONFIG.scorePerLevel[type];
+                return Math.floor((level - initLevel) * perLevel);
+            };
+
+            const scores = useMemo(() => ({
+                role: calculateScore('role', parseInt(globalParams.roleLevel) || 0),
+                skill: calculateScore('skill', parseInt(globalParams.skillLevel) || 0),
+                equip: calculateScore('equip', parseInt(globalParams.equipLevel) || 0),
+                pet: calculateScore('pet', parseInt(globalParams.petLevel) || 0),
+                relic: calculateScore('relic', parseInt(globalParams.relicLevel) || 0)
+            }), [globalParams.roleLevel, globalParams.skillLevel, globalParams.equipLevel, globalParams.petLevel, globalParams.relicLevel]);
+
+            const totalScore = useMemo(() => Object.values(scores).reduce((a, b) => a + b, 0), [scores]);
+            const starScore = useMemo(() => Math.floor(totalScore / STAR_CONFIG.scorePerStar + STAR_CONFIG.starInit), [totalScore]);
+
+            const calculateGap = (targetStar, lastSeasonStar) => {
+                return (targetStar - lastSeasonStar - STAR_CONFIG.starInit) * STAR_CONFIG.scorePerStar - totalScore;
+            };
+
+            return (
+                <div>
+                    <header className="header">
+                        <h1>🎮 游戏综合计算器</h1>
+                        <p>资源规划 · 原初之星 · 一站式联动</p>
+                    </header>
+
+                    {/* 全局参数输入区 */}
+                    <div className="global-params">
+                        <div className="global-params-title">
+                            <span>🎯</span>
+                            <span>全局目标等级设置</span>
+                        </div>
+                        <div className="params-grid">
+                            <div className="param-group highlight-days">
+                                <label><span className="emoji">📅</span> 计算天数</label>
+                                <input 
+                                    type="number" 
+                                    value={globalParams.days} 
+                                    onChange={handleParamChange('days')} 
+                                    placeholder="7"
+                                />
+                            </div>
+                            <div className="param-group highlight-role">
+                                <label><span className="emoji">👤</span> 角色等级</label>
+                                <input 
+                                    type="number" 
+                                    value={globalParams.roleLevel} 
+                                    onChange={handleParamChange('roleLevel')} 
+                                    placeholder="260"
+                                />
+                            </div>
+                            <div className="param-group highlight-skill">
+                                <label><span className="emoji">✨</span> 技能等级</label>
+                                <input 
+                                    type="number" 
+                                    value={globalParams.skillLevel} 
+                                    onChange={handleParamChange('skillLevel')} 
+                                    placeholder="250"
+                                />
+                            </div>
+                            <div className="param-group highlight-equip">
+                                <label><span className="emoji">⚔️</span> 装备等级</label>
+                                <input 
+                                    type="number" 
+                                    value={globalParams.equipLevel} 
+                                    onChange={handleParamChange('equipLevel')} 
+                                    placeholder="250"
+                                />
+                            </div>
+                            <div className="param-group highlight-pet">
+                                <label><span className="emoji">🐾</span> 幻兽等级</label>
+                                <input 
+                                    type="number" 
+                                    value={globalParams.petLevel} 
+                                    onChange={handleParamChange('petLevel')} 
+                                    placeholder="240"
+                                />
+                            </div>
+                            <div className="param-group highlight-relic">
+                                <label><span className="emoji">🏺</span> 遗物等级</label>
+                                <input 
+                                    type="number" 
+                                    value={globalParams.relicLevel} 
+                                    onChange={handleParamChange('relicLevel')} 
+                                    placeholder="25"
+                                />
+                            </div>
+                            <div className="param-group">
+                                <label><span className="emoji">📊</span> S2原初之星</label>
+                                <input 
+                                    type="number" 
+                                    value={globalParams.customLastSeason} 
+                                    onChange={handleParamChange('customLastSeason')} 
+                                    placeholder="自定义"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 原初之星计算区 */}
+                    <div className="star-section">
+                        <div className="section-title star">
+                            <span>🌟</span>
+                            <span>原初之星计算结果</span>
+                        </div>
+
+                        <div className="star-summary">
+                            <div className="star-card gold">
+                                <div className="icon">👤</div>
+                                <div className="value">{formatNumber(scores.role)}</div>
+                                <div className="label">角色评分</div>
+                            </div>
+                            <div className="star-card purple">
+                                <div className="icon">✨</div>
+                                <div className="value">{formatNumber(scores.skill)}</div>
+                                <div className="label">技能评分</div>
+                            </div>
+                            <div className="star-card cyan">
+                                <div className="icon">⚔️</div>
+                                <div className="value">{formatNumber(scores.equip)}</div>
+                                <div className="label">装备评分</div>
+                            </div>
+                            <div className="star-card green">
+                                <div className="icon">🐾</div>
+                                <div className="value">{formatNumber(scores.pet)}</div>
+                                <div className="label">幻兽评分</div>
+                            </div>
+                            <div className="star-card sand">
+                                <div className="icon">🏺</div>
+                                <div className="value">{formatNumber(scores.relic)}</div>
+                                <div className="label">遗物评分</div>
+                            </div>
+                            <div className="star-card gold">
+                                <div className="icon">💎</div>
+                                <div className="value">{formatNumber(totalScore)}</div>
+                                <div className="label">总评分</div>
+                            </div>
+                            <div className="star-card star">
+                                <div className="icon">🌟</div>
+                                <div className="value">{starScore}</div>
+                                <div className="label">原初之星</div>
+                            </div>
+                        </div>
+
+                        <div className="gap-table-wrapper">
+                            <table className="gap-table">
+                                <thead>
+                                    <tr>
+                                        <th>离目标差距↓</th>
+                                        {STAR_CONFIG.targetStars.map((t, i) => <th key={i}>{t.value}</th>)}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td className="row-label">S2达到{STAR_CONFIG.lastSeason1}</td>
+                                        {STAR_CONFIG.targetStars.map((t, i) => {
+                                            const gap = calculateGap(t.value, STAR_CONFIG.lastSeason1);
+                                            return <td key={i} className={gap < 0 ? 'positive' : gap > 0 ? 'negative' : ''}>{gap}</td>;
+                                        })}
+                                    </tr>
+                                    <tr>
+                                        <td className="row-label">S2达到{STAR_CONFIG.lastSeason2}</td>
+                                        {STAR_CONFIG.targetStars.map((t, i) => {
+                                            const gap = calculateGap(t.value, STAR_CONFIG.lastSeason2);
+                                            return <td key={i} className={gap < 0 ? 'positive' : gap > 0 ? 'negative' : ''}>{gap}</td>;
+                                        })}
+                                    </tr>
+                                    {globalParams.customLastSeason && (
+                                        <tr>
+                                            <td className="row-label">S2达到{globalParams.customLastSeason}</td>
+                                            {STAR_CONFIG.targetStars.map((t, i) => {
+                                                const gap = calculateGap(t.value, parseInt(globalParams.customLastSeason) || 0);
+                                                return <td key={i} className={gap < 0 ? 'positive' : gap > 0 ? 'negative' : ''}>{gap}</td>;
+                                            })}
+                                        </tr>
+                                    )}
+                                    <tr className="note-row">
+                                        <td className="row-label">达成加成</td>
+                                        {STAR_CONFIG.targetStars.map((t, i) => <td key={i} className={t.noteClass}>{t.note}</td>)}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* 资源计算区 */}
+                    <div className="resource-grid">
+                        <ResourcePanel 
+                            type="equipment" 
+                            config={RESOURCE_CONFIGS.equipment} 
+                            targetLevel={globalParams.equipLevel}
+                            globalDays={globalParams.days}
+                            resourceData={resourceData.equipment}
+                            onDataChange={handleResourceDataChange}
+                        />
+                        <ResourcePanel 
+                            type="skill" 
+                            config={RESOURCE_CONFIGS.skill} 
+                            targetLevel={globalParams.skillLevel}
+                            globalDays={globalParams.days}
+                            resourceData={resourceData.skill}
+                            onDataChange={handleResourceDataChange}
+                        />
+                        <ResourcePanel 
+                            type="relic" 
+                            config={RESOURCE_CONFIGS.relic} 
+                            targetLevel={globalParams.relicLevel}
+                            globalDays={globalParams.days}
+                            resourceData={resourceData.relic}
+                            onDataChange={handleResourceDataChange}
+                        />
+                    </div>
+
+                    <footer className="copyright">
+                        © 魔力绽放-蓝蓝路
+                    </footer>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
