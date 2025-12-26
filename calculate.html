@@ -612,6 +612,7 @@
                 { value: 2360, note: '经验+2%', noteClass: 'bonus-2' },
                 { value: 2880, note: '经验+2%', noteClass: 'bonus-2' },
                 { value: 3020, note: '升华3%', noteClass: 'bonus-3' },
+                { value: 3160, note: '宝石5%', noteClass: 'bonus-3' },
                 { value: 3300, note: '翻倍2%', noteClass: 'bonus-double' },
                 { value: 3440, note: '经验+2%', noteClass: 'bonus-2' },
                 { value: 4040, note: '经验+2%', noteClass: 'bonus-2' }
@@ -653,8 +654,8 @@
                 const targetLevelNum = parseInt(targetLevel) || currentLevelNum + 1;
                 const hourlyGainNum = parseInt(resourceData.hourlyGain) || config.defaultHourlyGain;
 
-                if (targetLevelNum <= currentLevelNum) {
-                    return { error: '目标等级需大于当前' };
+                if (targetLevelNum < currentLevelNum) {
+                    return { error: '目标等级不能小于当前' };
                 }
 
                 const singleItemCost = calculateUpgradeCost(currentLevelNum, targetLevelNum, config);
